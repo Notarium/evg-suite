@@ -10,7 +10,6 @@ fragment 包装成事件、用项目变量承载运行状态，使 AVG 项目能
 | --- | --- |
 | `evg-editor/` | Electron 桌面编辑器：打开并编辑 EVG 工程（变量 / 条件 / 动作 / 事件 / 地点 / 运行数据配置） |
 | `evg-runtime/` | AVG+ Light Engine 扩展：地点调度、时间 / 天气 / 物品系统、IfExt 条件分支 |
-| `playground/` | 示例工程（本地测试用，不入库） |
 | `Common.md` | EVG Data 公共契约——编辑器与 runtime 之间的权威文档 |
 | `sync_evg_data.py` | 把编辑器的契约实现同步到 runtime 的 sdk 副本 |
 
