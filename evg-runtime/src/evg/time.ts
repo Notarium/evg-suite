@@ -7,7 +7,12 @@
  */
 
 import type { DatabaseAPI, VariablesAPI } from "@avg-studio/sdk";
-import { RUNTIME_CONFIG_DATA_TYPE, RUNTIME_CONFIG_ROW_KEY, WEATHER_VARIABLE } from "./constants";
+import {
+  EVG_DATA_COLLECTION_ALIAS,
+  RUNTIME_CONFIG_DATA_TYPE,
+  RUNTIME_CONFIG_ROW_KEY,
+  WEATHER_VARIABLE,
+} from "./constants";
 import { loadWeatherTable, safeParse, type RuntimeWeatherEntry } from "./runtime-config";
 
 /** 时间变量名（Common.md §9.2）。 */
@@ -101,7 +106,7 @@ export function parseTimeSettings(docs: Array<Record<string, unknown>>): Runtime
 }
 
 export async function loadTimeSettings(db: DatabaseAPI): Promise<RuntimeTimeSettings> {
-  const docs = await db.collection("evdata").find();
+  const docs = await db.collection(EVG_DATA_COLLECTION_ALIAS).find();
   return parseTimeSettings(docs as Array<Record<string, unknown>>);
 }
 

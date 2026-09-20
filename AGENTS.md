@@ -52,7 +52,10 @@ playground/databases/                 │
 
 当前能力：
 
-- 项目历史记录、目录选择、项目结构校核。
+- 项目历史记录、目录选择、项目结构校核（必需项缺失拦截打开；
+  EVG Runtime 扩展快照缺失、`project.variables.json` 缺失只警示不拦截
+  ——后者由引擎在用户设置变量时创建，变量页签在文件缺失时锁定并引导，
+  见 evg-editor/AGENTS.md）。
 - 首页、变量与角色属性页、条件页、动作页、事件页、地点页、运行数据配置页、设置页。
 - 外观系统：Windows 98（默认）与 Fluent 扁平两套皮肤，在设置页切换并持久化。
 - `project.variables.json` 的变量模板读写和增删改。
@@ -95,7 +98,10 @@ playground/databases/                 │
   调度挂接只读检查（地点章节未加入蓝图 chapterIds 或无有效调度节点时
   显示警示条 + 刷新，不写回蓝图，见 Common.md §7）。
 - 章节 JSON 摘要解析。
-- 项目写操作统一串行化，所有 JSON 通过原子写入落盘。
+- 项目写操作统一走 `evg-editor/src/main/services/projectFileWriter.ts` 的
+  ProjectFileWriter：白名单 + create 权限制（引擎的文件一律 create: false，
+  编辑器绝不创建工程里不存在的文件），原子写入 + 项目级串行化。新增写入
+  目标时先登记白名单条目。
 
 主要代码分层：
 
@@ -229,7 +235,7 @@ pnpm exec tsc --noEmit
 
 7. **Runtime 系统变量**
    - Runtime 子系统（时间 / 物品系统等）所需的项目变量，命名约定
-     `evg.<systemId>.<name>`，kind 为 `system`。
+     `evg.<systemId>.<name>`，kind 为 `project`。
    - 声明源文件：`evg-editor/src/shared/runtimeSystems.ts`。
    - 编辑器主页提供就绪检查与一键写入；清单演进时需同步更新
      Common.md 第 9 节（与 Runtime 协调的依据）。

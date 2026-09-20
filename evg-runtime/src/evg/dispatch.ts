@@ -19,7 +19,11 @@ import type {
   ScheduleStrategyInput,
   SceneHotspot,
 } from "@avg-studio/sdk";
-import { CURRENT_LOCATION_VARIABLE, LOCATION_UI_PATH } from "./constants";
+import {
+  CURRENT_LOCATION_VARIABLE,
+  EVG_DATA_COLLECTION_ALIAS,
+  LOCATION_UI_PATH,
+} from "./constants";
 import {
   listEnabledLocations,
   loadEvgIndexes,
@@ -116,6 +120,9 @@ export class DispatchController {
     input: ScheduleStrategyInput,
     methodEvaluators: ExtensionMethodEvaluatorMap,
   ): Promise<ScheduleStrategyDecision> {
+    console.log("[evg-dispatch] dispatch entered")
+    // let colll = ctx.database.collection("evdata")
+    // console.log(`[evg-dispatch] test data access ${colll}`)
     if (this.pending) {
       warn("上一次调度尚未结束，忽略并发 resolve");
       return { kind: "end", reason: "调度重入" };
@@ -124,6 +131,16 @@ export class DispatchController {
     this.ctx = ctx;
     this.chapterNames = new Map(input.chapters.map((c) => [c.id, c.name]));
     setChapterOrderHint(input.chapters.map((c) => c.id));
+
+    // 诊断（临时）：定位 ctx.database.collection 链路问题，问题清楚后移除
+    try {
+      const col = ctx.database.collection(EVG_DATA_COLLECTION_ALIAS);
+      console.info("[evg-debug] collection() 已返回:", typeof col);
+      const docs = await col.find();
+      console.info("[evg-debug] find() 返回", docs.length, "条");
+    } catch (error) {
+      console.error("[evg-debug] database 访问失败:", error);
+    }
 
     this.settings = await loadLocationSettings(ctx.database);
     const indexes = await loadEvgIndexes(ctx.database);

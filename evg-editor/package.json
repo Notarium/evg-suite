@@ -1,6 +1,6 @@
 {
   "name": "evg-editor",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
   "description": "EVG Editor - Electron + React + TypeScript + Vite + pnpm",
   "main": "./out/main/index.js",
@@ -48,6 +48,7 @@
         "dir"
       ],
       "category": "public.app-category.developer-tools"
-    }
+    },
+    "npmRebuild": false
   }
 }

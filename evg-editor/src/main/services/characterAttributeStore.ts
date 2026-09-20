@@ -12,7 +12,7 @@ import {
   type CharacterAttributeValues,
   type NewAttributeTypeInput
 } from '../../shared/attribute'
-import { withProjectWriteLock, writeJsonFileAtomic } from './projectFileWriter'
+import { ProjectFileWriter, withProjectWriteLock } from './projectFileWriter'
 
 const CHARACTERS_FILENAME = 'characters.json'
 
@@ -280,7 +280,12 @@ async function writeCharacterAttributeStateUnlocked(
     characters: nextCharacters
   }
 
-  await writeJsonFileAtomic(filePath, nextFile)
+  // characters.json 由引擎创建，同样禁止编辑器凭空生成
+  const writer = new ProjectFileWriter(projectPath).register({
+    relativePath: CHARACTERS_FILENAME,
+    create: false
+  })
+  await writer.writeUnlocked(CHARACTERS_FILENAME, nextFile)
 
   return state
 }

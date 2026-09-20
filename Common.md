@@ -444,6 +444,26 @@ interface SceneHotspot {
 
 其余字段保持 `id`、`label`、`guard`、`type`、`data`。
 
+## 8.1 数据表的三个名字（重要）
+
+"evg-data 表"在不同层面有三个名字，**不要混用**：
+
+| 名字 | 值 | 出现位置 |
+| --- | --- | --- |
+| **dependency alias** | `evdata` | `extension.json` 的 `dataDependencies` key；`project.json` 的 `dataBindings.<扩展id>` 的 key；runtime 代码里 `ctx.database.collection(alias)` 的参数 |
+| **collection id** | `evdata` | 工程 `databases/<databaseId>--<collectionId>.collection.json` 文件名；database 定义 JSON 里 `collections[].id` |
+| **collection 展示名** | `evg-data` | `extension.json` 的 `dataDependencies.evdata.autoCreate.name`；database 定义 JSON 里 `collections[].name`（供引擎 UI 展示） |
+
+约束：
+
+- alias 是 runtime 代码读取数据的唯一入口键；改名必须三处同步
+  （manifest key / dataBindings key / `EVG_DATA_COLLECTION_ALIAS` 常量）。
+- `autoCreate.name` 只是展示名，**不是** collection id；引擎按 alias
+  绑定（经 dataBindings 解析到真实 collection），按模板创建的集合
+  `id` 固定为 `evdata`。
+- runtime 侧 alias 常量：`evg-runtime/src/evg/constants.ts` 的
+  `EVG_DATA_COLLECTION_ALIAS`。
+
 ## 9. Runtime 系统变量
 
 evg-runtime 会接管时间、物品系统等系统级功能。这些功能依赖一组约定好的
@@ -457,7 +477,9 @@ Runtime 负责读取和推进。本节是双方协调的依据。
 
 - 变量名统一使用 `evg.<systemId>.<name>` 命名空间（`evg.` 是本框架的前缀，
   避免与引擎内部变量重名），与项目自建变量隔离。
-- 编辑器写入的系统变量 `kind` 为 `system`（项目自建变量默认 `project`）。
+- 所有变量（含 Runtime 系统变量）`kind` 一律为 `project`——`system` 是
+  引擎内部使用的保留值，写了引擎无法识别；系统变量只靠 `evg.` 名字前缀
+  与项目自建变量区分。
 - 编辑器在主页展示各系统变量的就绪状态，并提供按系统或一键全部写入；
   写入只补缺失变量、对齐类型与持久化范围，不覆盖用户对默认值的合法调整。
 - 检查与写入只以 `name`、`type`、`persistence` 为准；`defaultValue` 仅在

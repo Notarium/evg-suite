@@ -4,7 +4,7 @@ name: build-editor
 on:
   workflow_dispatch:
   push:
-    tags: ["v*"]
+    tags: ["v*"]  # v0.0.1-preview / v0.0.1-beta 等预发布 tag 同样匹配
 
 jobs:
   build:
@@ -79,6 +79,9 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          # tag 带 -preview / -beta / .rc 等后缀时自动标记为 Pre-release，
+          # 不占 Latest 位；正式版直接打 vX.Y.Z
+          prerelease: ${{ contains(github.ref, '-preview') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
           files: |
             evg-editor-win.zip
             evg-editor-mac.zip

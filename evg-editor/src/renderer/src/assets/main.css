@@ -2621,6 +2621,34 @@ button:focus-visible {
   }
 }
 
+/* 变量页签锁定态：工程还没有 project.variables.json（引擎端未设置变量） */
+.variables-locked {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 24px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.variables-locked h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.variables-locked p {
+  max-width: 480px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
 /* 变量页主从布局：左列表沿用变量卡片样式，整卡可点选 */
 .master-detail-list {
   display: flex;
@@ -3077,11 +3105,82 @@ button:focus-visible {
 .event-action-card__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   color: var(--text-dim);
   font-size: 11px;
   font-weight: 600;
+}
+
+.event-action-card--dragging {
+  opacity: 0.5;
+}
+
+/* 排序把手：与运行配置时段行同款（fluent 三横线 / win98 凸起拇指槽） */
+.event-action-card__grip {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 24px;
+  cursor: grab;
+  border-radius: var(--radius-sm);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--text-dim) 0 1px,
+    transparent 1px 4px
+  );
+  background-size: 10px 11px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.event-action-card__grip:active {
+  cursor: grabbing;
+}
+
+:root[data-skin='win98'] .event-action-card__grip {
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  border-radius: 0;
+  background-color: #c0c0c0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    #808080 0 1px,
+    transparent 1px 4px
+  );
+}
+
+.event-action-card__index {
+  flex-shrink: 0;
+  min-width: 16px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* 上下移快捷按钮：纵向紧贴成组 */
+.event-action-card__order-buttons {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.event-action-card__order-buttons .icon-button {
+  padding: 0 3px;
+  min-height: 0;
+  height: 15px;
+}
+
+.event-action-card__title {
+  margin-right: auto;
+}
+
+.event-action-card__drop-line {
+  height: 2px;
+  margin: 1px 8px;
+  border-radius: 1px;
+  background: var(--accent);
 }
 
 .event-dialog {

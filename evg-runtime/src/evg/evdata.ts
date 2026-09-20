@@ -20,6 +20,7 @@ import type {
   LocationMap,
 } from "@avg-studio/sdk";
 import { EVG_DATA_KIND } from "@avg-studio/sdk";
+import { EVG_DATA_COLLECTION_ALIAS } from "./constants";
 import { safeParse } from "./runtime-config";
 
 export interface EvgIndexes {
@@ -40,7 +41,7 @@ export function createEmptyIndexes(): EvgIndexes {
 }
 
 export async function loadEvgIndexes(db: DatabaseAPI): Promise<EvgIndexes> {
-  const docs = await db.collection("evdata").find();
+  const docs = await db.collection(EVG_DATA_COLLECTION_ALIAS).find();
   return buildIndexes(docs as Array<Record<string, unknown>>);
 }
 

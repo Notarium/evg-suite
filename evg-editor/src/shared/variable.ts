@@ -61,6 +61,19 @@ export const PROJECT_VARIABLES_FILENAME = 'project.variables.json'
 export const PROJECT_VARIABLES_VERSION = 2
 export const DEFAULT_VARIABLE_KIND = 'project'
 
+/**
+ * Runtime 系统变量的名字前缀（evg.<system>.<name>）。
+ *
+ * 系统变量的判定依据是名字前缀而不是 kind——kind 必须一律是 'project'
+ * （'system' 是 AVG 引擎自己内部使用的保留值，写了引擎无法识别，
+ * 剧本编辑器也不会把这些变量列为可引用候选）。
+ */
+export const RUNTIME_VARIABLE_NAME_PREFIX = 'evg.'
+
+export function isRuntimeVariableName(name: string): boolean {
+  return name.startsWith(RUNTIME_VARIABLE_NAME_PREFIX)
+}
+
 /* ==========================================================================
  * 4. 变量记录
  * ========================================================================== */
@@ -114,6 +127,16 @@ export interface ProjectVariablesFile {
   version: number
   variables: ProjectVariable[]
   [key: string]: unknown
+}
+
+/**
+ * project.variables.json 的读取结果。
+ * 文件由引擎在用户设置变量时创建；不存在时 variables 为空清单、
+ * fileExists 为 false（UI 据此提示去引擎端设置变量）。
+ */
+export interface ProjectVariablesSnapshot {
+  variables: ProjectVariable[]
+  fileExists: boolean
 }
 
 /* ==========================================================================

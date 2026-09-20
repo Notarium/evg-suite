@@ -24,10 +24,8 @@ import {
   findVariableRefLocations,
   renameVariableReferences
 } from '../lib/evgReferences'
-import {
-  RUNTIME_SYSTEM_SPECS,
-  RUNTIME_VARIABLE_KIND
-} from '../../../shared/runtimeSystems'
+import { RUNTIME_SYSTEM_SPECS } from '../../../shared/runtimeSystems'
+import { isRuntimeVariableName } from '../../../shared/variable'
 import { useAppStore } from '../stores/useAppStore'
 import { useEvgDataStore } from '../stores/useEvgDataStore'
 import {
@@ -108,6 +106,9 @@ export function VariablesPage() {
   const saveEvgRecords = useEvgDataStore((state) => state.saveRecords)
   const reloadEvgRecords = useEvgDataStore((state) => state.reload)
   const loading = useVariableEditorStore((state) => state.loading)
+  const variablesFileExists = useVariableEditorStore(
+    (state) => state.variablesFileExists
+  )
   const saving = useVariableEditorStore((state) => state.saving)
   const dirtyVariables = useVariableEditorStore((state) => state.dirtyVariables)
   const dirtyAttributes = useVariableEditorStore((state) => state.dirtyAttributes)
@@ -196,10 +197,10 @@ export function VariablesPage() {
   const dirty = dirtyVariables || dirtyAttributes || evgDirty
 
   const userVariables = variables.filter(
-    (variable) => variable.kind !== RUNTIME_VARIABLE_KIND
+    (variable) => !isRuntimeVariableName(variable.name)
   )
-  const systemVariables = variables.filter(
-    (variable) => variable.kind === RUNTIME_VARIABLE_KIND
+  const systemVariables = variables.filter((variable) =>
+    isRuntimeVariableName(variable.name)
   )
 
   const editingVariable =
@@ -258,7 +259,7 @@ export function VariablesPage() {
               跨存档
             </span>
           )}
-          {variable.kind !== RUNTIME_VARIABLE_KIND && (
+          {!isRuntimeVariableName(variable.name) && (
             <button
               type="button"
               className="icon-button icon-button--danger"
@@ -343,7 +344,7 @@ export function VariablesPage() {
     if (
       patch.name !== undefined &&
       patch.name !== current.name &&
-      current.kind !== RUNTIME_VARIABLE_KIND &&
+      !isRuntimeVariableName(current.name) &&
       patch.name.trim() !== ''
     ) {
       const source =
@@ -484,7 +485,20 @@ export function VariablesPage() {
           </button>
         </div>
 
-        {activeTab === 'variables' && (
+        {activeTab === 'variables' && !variablesFileExists && (
+          <div className="variables-locked">
+            <span className="empty-state__icon">
+              <VariablesIcon size={28} />
+            </span>
+            <h3>工程还没有变量文件</h3>
+            <p>
+              project.variables.json 由引擎在设置变量时创建。请先到引擎编辑器里
+              设置任意一个变量（例如把一个变量拖进剧情），然后回到本页或点击右上角“取消修改”刷新。
+            </p>
+          </div>
+        )}
+
+        {activeTab === 'variables' && variablesFileExists && (
           <div className="master-detail-layout">
             <section className="section-card master-detail-list-panel">
               <div className="section-card__head">
@@ -537,12 +551,12 @@ export function VariablesPage() {
                     </div>
                   </div>
 
-                  {editingVariable.kind === RUNTIME_VARIABLE_KIND && (
+                  {isRuntimeVariableName(editingVariable.name) && (
                     <div className="variable-system-hint">
                       <p>
                         {systemVariableOwner
                           ? `该变量由 ${systemVariableOwner.system} 声明（${systemVariableOwner.variable}），此处只读；缺失 / 类型不符的修复请使用主页的“系统变量”同步。`
-                          : '系统变量（kind=system）由运行时扩展声明（如物品系统的 evg.item.* 由运行数据配置生成），此处只读。'}
+                          : 'EVG 系统变量（evg. 前缀）由运行时扩展声明（如物品系统的 evg.item.* 由运行数据配置生成），此处只读。'}
                       </p>
                     </div>
                   )}
@@ -551,7 +565,7 @@ export function VariablesPage() {
                     value={editingVariable}
                     variables={variables}
                     disabled={loading}
-                    readOnly={editingVariable.kind === RUNTIME_VARIABLE_KIND}
+                    readOnly={isRuntimeVariableName(editingVariable.name)}
                     onChange={updateSelectedVariable}
                   />
 

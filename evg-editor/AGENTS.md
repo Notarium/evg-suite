@@ -463,15 +463,25 @@ databases/
 ```text
 project.json
 characters.json
-extensions.json
-project.variables.json
 scenes.json
 ```
+
+`extensions.json` 与 `project.variables.json` 不在必需清单：前者是引擎的
+遗留聚合文件，新式工程没有；**后者由引擎在用户设置变量时创建**——引擎
+新建的工程没有它。读取缺失按空清单处理，同时给出 warning 级 issue 提醒
+“去引擎端设置变量”；变量页签在文件缺失时锁定并显示引导（store 的
+`variablesFileExists` 驱动）；编辑器保存变量会创建 / 写回该文件
+（schema version 2 与引擎写出的格式一致）。
 
 校验要求：
 
 - 目录必须存在且是目录
 - JSON 文件必须存在且是合法 JSON
+- EVG Runtime 扩展快照（`extensions/com.notarium.evg-runtime/extension.json`）
+  缺失 / id 不符 / JSON 损坏时给 warning 级 issue（不拦截打开，issue.code
+  前缀 `warning-`，valid 判定不计入）
+- `project.variables.json` 缺失同样给 warning 级 issue（该文件由引擎在
+  用户设置变量时创建）
 - `project.json` 必须能解析为对象
 - `project.json` 的 `id` 和 `name` 必须是非空字符串
 - 重新打开历史项目时也会重新校核
@@ -673,7 +683,7 @@ const loading = useAppStore((state) => state.loading)
     布尔紫粉，文本色用 color-mix 掺主题文字色保证亮暗可读，win98 覆盖为
     深 98 色板文字 + 同色实线描边 + 白底）+ 默认值；仅 shared 持久化的
     变量在行尾（删除按钮旁）显示“跨存档”徽章
-  - 左列表按 kind 分组：kind=system（运行时子系统声明，命名 evg.*）单独
+  - 左列表按 kind 分组：kind=project（evg. 前缀标识）（运行时子系统声明，命名 evg.*）单独
     成组置底；只有存在系统变量时才显示分组标题
   - 右栏：VariableEditor 实时编辑器（控件直接绑定草稿，无表单内保存
     按钮；重名 / 空名即时提示为展示性，不阻塞保存）+ 系统变量归属提示
@@ -686,7 +696,7 @@ const loading = useAppStore((state) => state.loading)
     事件；被改写的 evg-data 草稿置脏并纳入本页保存 / 取消修改；名字
     被清空的中间态不改写（源名取 lastNameRef）；引擎剧本内的变量引用
     不在同步范围
-  - 系统变量（kind=system）在页面内只读：VariableEditor 的 readOnly
+  - 系统变量（kind=project（evg. 前缀标识））在页面内只读：VariableEditor 的 readOnly
     禁用名字 / 类型 / 持久化 / 默认值，行内删除按钮隐藏；维护走主页的
     系统变量同步
   - 草稿模式（与条件页一致）：所有增删改只改内存草稿并置脏——
@@ -737,7 +747,10 @@ const loading = useAppStore((state) => state.loading)
 - 事件页 `EventsPage`
   - 以列表展示 evg-data 中 `type=Event` 的行
   - 支持新增、删除、修改事件定义，并保持 row.key === data.id
-  - 通过 EventEditor 编辑 label、canExecute 和有序 actions 列表
+  - 通过 EventEditor 编辑 label、canExecute 和有序 actions 列表；
+    动作卡片头部带排序把手（拖拽 + 插入指示线，拖拽中不提交松手落位，
+    与运行配置时段行同款交互）与上移 / 下移快捷按钮，行首序号实时显示
+    执行顺序——执行顺序即数组顺序，契约不做 order 包装
   - 每个 effect 通过 ActionBindingEditor 选择内联或引用
   - EventEditorDialog 已准备好，供后续地点热点编辑弹窗复用
   - 删除时展示热点引用位置，支持保留引用或级联解绑两种模式
@@ -1438,7 +1451,8 @@ src/renderer/src/components/home/RuntimeSystemsPanel.tsx 主页面板
 - 检查维度（`diffRuntimeSystem`）：缺失 / 类型不符 / 持久化范围不符；
   按变量名匹配，不检查 kind 与 defaultValue（用户微调默认值是合法的）。
 - 写入（`applyRuntimeSystemFix` + `useVariableEditorStore.saveVariables`）：
-  - 缺失变量按规范新增，`kind` 使用 `RUNTIME_VARIABLE_KIND = 'system'`；
+  - 缺失变量按规范新增，`kind` 为缺省 `project`（`system` 是引擎保留值，
+    绝不能写入——否则剧本编辑器无法引用这些变量）；
   - 类型 / 持久化不符的变量对齐到规范值（type / defaultValue / persistence
     以规范为准，保留 id、name、kind、createdAt 与其它未知字段）；
   - 已就绪的变量原样保留；走统一的变量写入路径（项目级写锁 + 原子写入）。
@@ -1539,12 +1553,32 @@ src/renderer/src/components/evg/effect/ActionDataEditor.tsx CallExtensionMethod 
 
 ```text
 src/main/services/projectFileWriter.ts
+
+**ProjectFileWriter（写入安全）**：白名单制——只有登记过的项目相对路径
+可写，每条目独立声明 create 权限（project.variables.json / characters.json /
+evg-data collection 均为 `create: false`，编辑器绝不凭空创建引擎的文件）；
+附带目录穿越防护与项目级写锁。编辑器自身数据（userData 历史等）走
+`writeJsonFileAtomic` 直通，不受白名单约束。行为由 `_tmp/writer-smoke.ts`
+冒烟覆盖。
 ```
 
-两个核心函数：
+核心 API：
 
-- `writeJsonFileAtomic(filePath, value)`：整个主进程里唯一直接执行 `writeFile + rename` 落盘 JSON 的地方。
-- `withProjectWriteLock(projectPath, task)`：同一个项目路径下的写操作按调用顺序串行执行，避免 read-modify-write 互相覆盖。
+- **`ProjectFileWriter`（项目文件写入器）**：白名单制——只有登记过的项目
+  相对路径可写，每条目独立声明 create 权限（project.variables.json /
+  characters.json / evg-data collection 均为 `create: false`，编辑器绝不
+  凭空创建引擎的文件）；拒绝 `..` / 绝对路径 / 反斜杠等非法路径（防目录
+  穿越）。新增写入目标时先在此登记白名单条目。**锁约定**：`write()` 自行
+  取项目写锁（适合锁外单步写入）；`writeUnlocked()` 不取锁，供服务层
+  "锁内 read-modify-write"复用——在 `withProjectWriteLock` 内调用 `write()`
+  会因锁队列互相等待而**死锁**（三个 store 服务均处于锁内，必须用
+  `writeUnlocked`）。行为由 `_tmp/writer-smoke.ts`（单元）与
+  `_tmp/writer-integration-smoke.ts`（完整链路 + 死锁回归）覆盖。
+- `writeJsonFileAtomic(filePath, value)`：整个主进程唯一直接执行
+  `writeFile + rename` 落盘 JSON 的地方；编辑器自身数据（userData 历史
+  等，非用户项目文件）经此直通。
+- `withProjectWriteLock(projectPath, task)`：同一个项目路径下的写操作按
+  调用顺序串行执行，避免 read-modify-write 互相覆盖。
 
 当前写入链路：
 

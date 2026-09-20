@@ -10,9 +10,10 @@ import {
   type NewProjectVariableInput,
   type ProjectVariable,
   type ProjectVariablesFile,
+  type ProjectVariablesSnapshot,
   type VariableType
 } from '../../shared/variable'
-import { withProjectWriteLock, writeJsonFileAtomic } from './projectFileWriter'
+import { ProjectFileWriter, withProjectWriteLock } from './projectFileWriter'
 
 function stripBom(content: string): string {
   return content.charCodeAt(0) === 0xfeff ? content.slice(1) : content
@@ -159,31 +160,45 @@ async function readExistingVariablesFile(
   }
 }
 
+/**
+ * project.variables.json 由引擎在用户设置变量时创建——引擎新建的工程
+ * 没有它。读取宽容：缺失按空清单处理，但通过 fileExists 告知调用方，
+ * 供 UI 提示“去引擎端设置一个变量”。
+ */
 export async function readProjectVariablesFile(
   projectPath: string
-): Promise<ProjectVariablesFile> {
+): Promise<{ file: ProjectVariablesFile; fileExists: boolean }> {
   const filePath = resolve(projectPath, PROJECT_VARIABLES_FILENAME)
 
   let raw: string
   try {
     raw = await readFile(filePath, 'utf8')
   } catch {
-    throw new Error(`找不到变量文件：${filePath}`)
+    return {
+      file: { version: PROJECT_VARIABLES_VERSION, variables: [] },
+      fileExists: false
+    }
   }
 
-  return parseProjectVariablesFile(raw, filePath)
+  return { file: parseProjectVariablesFile(raw, filePath), fileExists: true }
 }
 
 export async function readProjectVariables(
   projectPath: string
-): Promise<ProjectVariable[]> {
-  return (await readProjectVariablesFile(projectPath)).variables
+): Promise<ProjectVariablesSnapshot> {
+  const { file, fileExists } = await readProjectVariablesFile(projectPath)
+  return { variables: file.variables, fileExists }
 }
 
 async function writeProjectVariablesUnlocked(
   projectPath: string,
   variables: ProjectVariable[]
 ): Promise<ProjectVariablesFile> {
+  // create: false —— 该文件由引擎在用户设置变量时创建，编辑器绝不能凭空生成
+  const writer = new ProjectFileWriter(projectPath).register({
+    relativePath: PROJECT_VARIABLES_FILENAME,
+    create: false
+  })
   const filePath = resolve(projectPath, PROJECT_VARIABLES_FILENAME)
   const validatedVariables = variables.map((variable, index) =>
     readProjectVariable(variable, index, '待写入的变量列表')
@@ -198,7 +213,7 @@ async function writeProjectVariablesUnlocked(
     variables: validatedVariables
   }
 
-  await writeJsonFileAtomic(filePath, nextFile)
+  await writer.writeUnlocked(PROJECT_VARIABLES_FILENAME, nextFile)
 
   return nextFile
 }
@@ -230,7 +245,7 @@ export function insertProjectVariable(
   input: NewProjectVariableInput
 ): Promise<ProjectVariable> {
   return withProjectWriteLock(projectPath, async () => {
-    const file = await readProjectVariablesFile(projectPath)
+    const { file } = await readProjectVariablesFile(projectPath)
 
     if (file.variables.some((variable) => variable.name === input.name)) {
       throw new Error(`变量名已存在：${input.name}`)

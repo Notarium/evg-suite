@@ -3,8 +3,8 @@
   "name": "EVG运行时",
   "description": "",
   "author": "notarium",
-  "version": "0.1.0",
-  "entry": "dist/index.js",
+  "version": "0.0.1",
+  "entry": "dist/index.mjs",
   "sdkVersion": ">=2.0.0",
   "dataDependencies": {
     "evdata": {
@@ -21,6 +21,7 @@
           "type": "object",
           "required": [
             "key",
+            "type",
             "data"
           ],
           "columns": [
@@ -31,8 +32,8 @@
             },
             {
               "key": "type",
-              "label":"类型",
-              "type":"number"
+              "label": "类型",
+              "type": "number"
             },
             {
               "key": "data",

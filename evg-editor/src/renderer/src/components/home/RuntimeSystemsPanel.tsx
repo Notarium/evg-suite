@@ -109,6 +109,9 @@ function describeVariable(variable: ProjectVariable): string {
 export function RuntimeSystemsPanel() {
   const currentProject = useAppStore((state) => state.currentProject)
   const variables = useVariableEditorStore((state) => state.variables)
+  const variablesFileExists = useVariableEditorStore(
+    (state) => state.variablesFileExists
+  )
   const loading = useVariableEditorStore((state) => state.loading)
   const saving = useVariableEditorStore((state) => state.saving)
   const errorMessage = useVariableEditorStore((state) => state.errorMessage)
@@ -156,6 +159,10 @@ export function RuntimeSystemsPanel() {
   const fixes = syncTargets.flatMap((diff) => diff.mismatched)
 
   const performSync = async (): Promise<void> => {
+    // 写入安全：project.variables.json 由引擎在用户设置变量时创建。
+    // 文件不存在时同步会凭空新建它——这是被禁止的写入操作，直接拒绝。
+    if (!variablesFileExists) return
+
     let next = variables
     for (const diff of syncTargets) {
       next = applyRuntimeSystemFix(next, diff)
@@ -179,13 +186,27 @@ export function RuntimeSystemsPanel() {
         <button
           type="button"
           className="button button--primary"
-          disabled={!anyIssue || saving || loading}
+          disabled={!variablesFileExists || !anyIssue || saving || loading}
+          title={
+            variablesFileExists
+              ? undefined
+              : 'project.variables.json 不存在，无法同步'
+          }
           onClick={() => setPendingSync('all')}
         >
           <VariablesIcon size={15} />
           全部同步
         </button>
       </div>
+
+      {!variablesFileExists && (
+        <div className="inline-notice" role="alert">
+          <span>
+            工程还没有 project.variables.json——该文件由引擎在设置变量时创建。
+            请先在引擎编辑器里设置至少一个变量，再回来同步。
+          </span>
+        </div>
+      )}
 
       {errorMessage && (
         <div className="inline-notice" role="alert">
@@ -224,7 +245,12 @@ export function RuntimeSystemsPanel() {
                     <button
                       type="button"
                       className="button button--ghost"
-                      disabled={issueCount === 0 || saving || loading}
+                      disabled={
+                        !variablesFileExists ||
+                        issueCount === 0 ||
+                        saving ||
+                        loading
+                      }
                       onClick={() => setPendingSync(diff)}
                     >
                       同步变量

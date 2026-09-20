@@ -181,6 +181,14 @@ export function ChevronDownIcon({ size = 16, ...props }: IconProps) {
   )
 }
 
+export function ChevronUpIcon({ size = 16, ...props }: IconProps) {
+  return (
+    <svg {...iconProps(size)} {...props}>
+      <path d="m6 15 6-6 6 6" />
+    </svg>
+  )
+}
+
 export function VariablesIcon({ size = 18, ...props }: IconProps) {
   return (
     <svg {...iconProps(size)} {...props}>

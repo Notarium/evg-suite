@@ -11,6 +11,7 @@ import type { DatabaseAPI } from "@avg-studio/sdk";
 import {
   RUNTIME_CONFIG_DATA_TYPE,
   RUNTIME_CONFIG_ROW_KEY,
+  EVG_DATA_COLLECTION_ALIAS,
 } from "./constants";
 
 export type RuntimeMovementMode = "free" | "graph";
@@ -97,7 +98,7 @@ export function parseRuntimeLocationSettings(
 }
 
 export async function loadLocationSettings(db: DatabaseAPI): Promise<RuntimeLocationSettings> {
-  const docs = await db.collection("evdata").find();
+  const docs = await db.collection(EVG_DATA_COLLECTION_ALIAS).find();
   return parseRuntimeLocationSettings(docs as Array<Record<string, unknown>>);
 }
 
@@ -150,7 +151,7 @@ export function parseWeatherTable(
 export async function loadWeatherTable(
   db: DatabaseAPI,
 ): Promise<RuntimeWeatherEntry[]> {
-  const docs = await db.collection("evdata").find();
+  const docs = await db.collection(EVG_DATA_COLLECTION_ALIAS).find();
   return parseWeatherTable(docs as Array<Record<string, unknown>>);
 }
 
@@ -196,6 +197,6 @@ export function parseItemRules(
 }
 
 export async function loadItemRules(db: DatabaseAPI): Promise<Map<string, RuntimeItemRuleLite>> {
-  const docs = await db.collection("evdata").find();
+  const docs = await db.collection(EVG_DATA_COLLECTION_ALIAS).find();
   return parseItemRules(docs as Array<Record<string, unknown>>);
 }

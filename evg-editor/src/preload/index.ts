@@ -2,7 +2,12 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { CharacterAttributeState } from '../shared/attribute'
 import type { ChapterSummary } from '../shared/chapter'
 import type { EvgDataRecord } from '../shared/database'
-import { IPC_CHANNELS, type AppApi, type IpcResult } from '../shared/ipc'
+import {
+  IPC_CHANNELS,
+  type AppApi,
+  type IpcResult,
+  type ProjectVariablesSnapshot
+} from '../shared/ipc'
 import type { ProjectRecord } from '../shared/project'
 import type { SceneSummary } from '../shared/scene'
 import type { ProjectVariable } from '../shared/variable'
@@ -45,9 +50,12 @@ const api: AppApi = {
   },
   variables: {
     read: (projectPath: string) =>
-      invoke<ProjectVariable[]>(IPC_CHANNELS.variables.read, projectPath),
+      invoke<ProjectVariablesSnapshot>(
+        IPC_CHANNELS.variables.read,
+        projectPath
+      ),
     write: (projectPath: string, variables: ProjectVariable[]) =>
-      invoke<ProjectVariable[]>(
+      invoke<ProjectVariablesSnapshot>(
         IPC_CHANNELS.variables.write,
         projectPath,
         variables

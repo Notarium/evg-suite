@@ -59,12 +59,15 @@ export interface ProjectsApi {
   clear: () => Promise<IpcResult<ProjectRecord[]>>
 }
 
+import type { ProjectVariablesSnapshot } from './variable'
+export type { ProjectVariablesSnapshot }
+
 export interface VariablesApi {
-  read: (projectPath: string) => Promise<IpcResult<ProjectVariable[]>>
+  read: (projectPath: string) => Promise<IpcResult<ProjectVariablesSnapshot>>
   write: (
     projectPath: string,
     variables: ProjectVariable[]
-  ) => Promise<IpcResult<ProjectVariable[]>>
+  ) => Promise<IpcResult<ProjectVariablesSnapshot>>
 }
 
 export interface EvgDataApi {

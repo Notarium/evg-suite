@@ -27,6 +27,17 @@ export const ITEM_VARIABLE_PREFIX = "evg.item.";
  */
 export const WEATHER_VARIABLE = "evg.weather.current";
 
+/**
+ * evg-data 数据表的 dependency alias（manifest dataDependencies 的 key）。
+ *
+ * 注意 SDK 的 `db.collection(alias)` 接收的是 manifest 里的 alias 而不是
+ * 项目内 collection id / name——三者当前恰好都源于 "evdata" 与 "evg-data"：
+ * alias = evdata；项目内 collection id = evdata；collection 展示名
+ * （extension.json autoCreate.name）= evg-data。改 manifest 的 key 时必须
+ * 同步这里与工程 dataBindings 的 key。
+ */
+export const EVG_DATA_COLLECTION_ALIAS = "evdata";
+
 /** runtime-config 行的固定 type / key（Common.md §9.3）。 */
 export const RUNTIME_CONFIG_DATA_TYPE = 1000;
 export const RUNTIME_CONFIG_ROW_KEY = "runtime-config";

@@ -7,7 +7,7 @@ import type {
   NewEvgDataRecordInput
 } from '../../shared/database'
 import { findEvgDataRecordContractIssue } from '../../shared/evgDataValidate'
-import { withProjectWriteLock, writeJsonFileAtomic } from './projectFileWriter'
+import { ProjectFileWriter, withProjectWriteLock } from './projectFileWriter'
 
 interface DatabaseCollectionFile {
   formatVersion: number
@@ -209,7 +209,14 @@ async function commitEvgDataRecords(
     )
   }
 
-  await writeJsonFileAtomic(table.collectionFilePath, nextCollectionFile)
+  // collection 文件在 databases/ 子目录；它随数据库定义存在（打开工程时
+  // 校验过），编辑器只写不建。相对路径用 id 重构，与解析器的拼装规则一致。
+  const relativePath = `databases/${table.databaseId}--${table.collectionId}.collection.json`
+  const writer = new ProjectFileWriter(table.projectPath).register({
+    relativePath,
+    create: false
+  })
+  await writer.writeUnlocked(relativePath, nextCollectionFile)
 
   return records
 }

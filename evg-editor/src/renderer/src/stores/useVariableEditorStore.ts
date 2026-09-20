@@ -43,6 +43,8 @@ interface VariableEditorState {
   projectPath: string | null
   loadedPath: string | null
   variables: ProjectVariable[]
+  /** project.variables.json 是否存在（false = 引擎端尚未设置过变量，页面锁定）。 */
+  variablesFileExists: boolean
   attributeState: CharacterAttributeState | null
   loading: boolean
   saving: boolean
@@ -104,20 +106,26 @@ function getAttributesApi(): Window['api']['attributes'] {
 
 async function readEditorData(projectPath: string): Promise<{
   variables: ProjectVariable[]
+  variablesFileExists: boolean
   attributeState: CharacterAttributeState
 }> {
-  const [variables, attributeState] = await Promise.all([
+  const [snapshot, attributeState] = await Promise.all([
     getVariablesApi().read(projectPath).then(unwrap),
     getAttributesApi().read(projectPath).then(unwrap)
   ])
 
-  return { variables, attributeState }
+  return {
+    variables: snapshot.variables,
+    variablesFileExists: snapshot.fileExists,
+    attributeState
+  }
 }
 
 export const useVariableEditorStore = create<VariableEditorState>((set, get) => ({
   projectPath: null,
   loadedPath: null,
   variables: [],
+  variablesFileExists: false,
   attributeState: null,
   loading: false,
   saving: false,
@@ -132,10 +140,12 @@ export const useVariableEditorStore = create<VariableEditorState>((set, get) => 
     set({ loading: true, errorMessage: null, projectPath })
 
     try {
-      const { variables, attributeState } = await readEditorData(projectPath)
+      const { variables, variablesFileExists, attributeState } =
+        await readEditorData(projectPath)
 
       set({
         variables,
+        variablesFileExists,
         attributeState,
         loadedPath: projectPath,
         loading: false,
@@ -154,10 +164,12 @@ export const useVariableEditorStore = create<VariableEditorState>((set, get) => 
     set({ loading: true, errorMessage: null, projectPath })
 
     try {
-      const { variables, attributeState } = await readEditorData(projectPath)
+      const { variables, variablesFileExists, attributeState } =
+        await readEditorData(projectPath)
 
       set({
         variables,
+        variablesFileExists,
         attributeState,
         loadedPath: projectPath,
         loading: false,
@@ -190,6 +202,17 @@ export const useVariableEditorStore = create<VariableEditorState>((set, get) => 
     const projectPath = get().projectPath
     if (!projectPath) {
       set({ errorMessage: '尚未打开项目' })
+      return false
+    }
+
+    // 写入安全（最终防线）：project.variables.json 由引擎在用户设置变量
+    // 时创建。文件不存在时任何写入都会凭空新建它——这是被禁止的操作，
+    // 无论哪个调用方（主页同步 / 本页保存）都必须在这里被拦下。
+    if (!get().variablesFileExists) {
+      set({
+        errorMessage:
+          'project.variables.json 不存在（需先在引擎编辑器里设置变量），已阻止写入'
+      })
       return false
     }
 

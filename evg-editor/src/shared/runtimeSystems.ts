@@ -27,8 +27,15 @@ import {
 /** Runtime 系统变量不允许 pending：运行时要直接参与求值。 */
 export type RuntimeVariableType = Exclude<VariableType, 'pending'>
 
-/** Runtime 系统写入的变量统一使用的 kind，便于与项目自建变量区分。 */
-export const RUNTIME_VARIABLE_KIND = 'system'
+/**
+ * Runtime 系统写入的变量统一使用的 kind。
+ *
+ * 必须是 'project'：kind='system' 是 AVG 引擎自己内部使用的保留值，引擎
+ * 的剧本编辑器不会把 system 变量作为可引用候选，写了 system 会导致
+ * 剧本里无法引用这些变量。EVG Runtime 运行在用户空间，它的变量与项目
+ * 自建变量同级，区分只靠 `evg.` 命名前缀。
+ */
+export const RUNTIME_VARIABLE_KIND = 'project'
 
 export interface RuntimeVariableSpec {
   /** 变量名；约定 `evg.<systemId>.<name>`。 */
@@ -283,7 +290,8 @@ export function hasRuntimeIssues(diff: RuntimeSystemDiff): boolean {
 
 /**
  * 应用一个系统的修复，返回写回用的变量数组（不修改入参）：
- * - 缺失变量按规范新增，kind 使用 RUNTIME_VARIABLE_KIND；
+ * - 缺失变量按规范新增，kind 为缺省的 'project'（绝不能用引擎保留的
+ *   'system'，否则剧本编辑器无法引用这些变量）；
  * - 类型或持久化不符的变量对齐到规范（type / defaultValue / persistence
  *   以规范为准，保留 id、name、kind、createdAt 与其它未知字段）；
  * - 已就绪的变量原样保留。
@@ -296,12 +304,13 @@ export function applyRuntimeSystemFix(
 
   for (const check of diff.missing) {
     next.push(
+      // kind 走 createProjectVariable 的缺省（'project'）——系统变量与
+      // 项目自建变量同级，区分只靠 evg. 前缀，绝不能写引擎保留的 system
       createProjectVariable({
         name: check.spec.name,
         type: check.spec.type,
         defaultValue: check.spec.defaultValue,
-        persistence: check.spec.persistence,
-        kind: RUNTIME_VARIABLE_KIND
+        persistence: check.spec.persistence
       })
     )
   }
