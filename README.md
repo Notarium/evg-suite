@@ -1,4 +1,4 @@
-# uieidorx — EVG Framework
+# EVG Framework
 
 针对 LetsGal Studio 的 SLG 化扩展框架：把章节包装成地点、把
 fragment 包装成事件、用项目变量承载运行状态，使 AVG 项目能以

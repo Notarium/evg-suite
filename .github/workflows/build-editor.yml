@@ -1,0 +1,84 @@
+name: build-editor
+
+# 手动触发，或推 tag（v*）时构建双平台分发目录
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: evg-editor-win
+            unpacked: release/win-unpacked
+          - os: macos-latest
+            artifact: evg-editor-mac
+            unpacked: release/mac-unpacked
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evg-editor/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: evg-editor
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: evg-editor
+        run: pnpm typecheck
+
+      - name: Build distributable
+        working-directory: evg-editor
+        run: pnpm dist
+        env:
+          # mac 目录包在 CI 上无需签名；未签名 app 用户首次打开需右键 → 打开
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: evg-editor/${{ matrix.unpacked }}/
+
+  # 打 tag 时把双平台产物附到 GitHub Release
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist
+
+      - name: Zip artifacts
+        run: |
+          cd dist
+          zip -qr ../evg-editor-win.zip win-unpacked
+          cd ..
+          cd dist
+          if [ -d mac-unpacked ]; then
+            # mac 的 .app 权限位依赖 zip 保留 unix 权限；无签名 app 需右键打开
+            ditto -c -k --keepParent mac-unpacked ../evg-editor-mac.zip 2>/dev/null \
+              || zip -qr ../evg-editor-mac.zip mac-unpacked
+          fi
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            evg-editor-win.zip
+            evg-editor-mac.zip
