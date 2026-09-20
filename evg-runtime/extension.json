@@ -1,0 +1,47 @@
+{
+  "id": "com.notarium.evg-runtime",
+  "name": "EVG运行时",
+  "description": "",
+  "author": "notarium",
+  "version": "0.1.0",
+  "entry": "dist/index.js",
+  "sdkVersion": ">=2.0.0",
+  "dataDependencies": {
+    "evdata": {
+      "name": "EV数据",
+      "description": "外部写入的EV数据",
+      "contract": "com.notarium.evg-data",
+      "version": "^1.0.0",
+      "access": "read",
+      "autoCreate": {
+        "name": "evg-data",
+        "contractVersion": "1.0.0",
+        "runtimePolicy": "readonly",
+        "schema": {
+          "type": "object",
+          "required": [
+            "key",
+            "data"
+          ],
+          "columns": [
+            {
+              "key": "key",
+              "label": "键",
+              "type": "text"
+            },
+            {
+              "key": "type",
+              "label":"类型",
+              "type":"number"
+            },
+            {
+              "key": "data",
+              "label": "数据",
+              "type": "long-text"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

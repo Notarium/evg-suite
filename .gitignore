@@ -1,0 +1,20 @@
+# workspace-local state
+.zcode/
+
+# local scratch / smoke test artifacts
+_tmp/
+
+# sample project (opened by editor/runtime for testing, not part of the source)
+playground/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# logs & env
+*.log
+.env
+.env.*
+!.env.example
