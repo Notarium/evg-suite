@@ -18,8 +18,8 @@ import type {
   ActionType,
   EventType,
   LocationMap,
-} from "@avg-studio/sdk";
-import { EVG_DATA_KIND } from "@avg-studio/sdk";
+} from "./evg-data";
+import { EVG_DATA_KIND } from "./evg-data";
 import { EVG_DATA_COLLECTION_ALIAS } from "./constants";
 import { safeParse } from "./runtime-config";
 

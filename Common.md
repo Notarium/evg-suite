@@ -9,7 +9,7 @@
 - Runtime 系统子系统（时间 / 物品系统等）所需的项目变量与运行配置约定见第 9 节，
   声明源文件为 `evg-editor/src/shared/runtimeSystems.ts` 与
   `evg-editor/src/shared/runtimeConfig.ts`。
-- 该文件零依赖，可整体复制到 `evg-runtime/sdk/types/evg-data.ts`。
+- 该文件零依赖，可整体复制到 `evg-runtime/src/evg/evg-data.ts`。
 - 工作目录根部的 `sync_evg_data.py` 负责本地同步，脚本不进入 evg-editor 发布内容。
 
 ## 2. 基础类型
@@ -730,10 +730,10 @@ add-item / remove-item 参数）失联，编辑器在 id 编辑处提供重复�
 evg-editor/src/shared/evgData.ts
 ```
 
-runtime 目标：
+runtime 目标（runtime 源码的一部分，不进官方 SDK 副本）：
 
 ```text
-evg-runtime/sdk/types/evg-data.ts
+evg-runtime/src/evg/evg-data.ts
 ```
 
 本地同步：
@@ -743,11 +743,8 @@ python sync_evg_data.py
 python sync_evg_data.py --check
 ```
 
-脚本位于工作目录根部，不进入 evg-editor 发布包。同步时会自动确保 `evg-runtime/sdk/types/index.ts` 中有：
-
-```ts
-export * from "./evg-data";
-```
+脚本位于工作目录根部，不进入 evg-editor 发布包。`evg-runtime/sdk/` 是官方
+`@avg-studio/sdk` 的只读副本，同步脚本不写入该目录。
 
 ### 10.2 扩展约定
 

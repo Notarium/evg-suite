@@ -13,12 +13,12 @@
  * 模块为此提供 createDispatchController 工厂（测试用），默认导出单例。
  */
 
-import type { ExtensionContext } from "@avg-studio/sdk";
 import type {
+  ExtensionContext,
   ScheduleStrategyDecision,
   ScheduleStrategyInput,
-  SceneHotspot,
 } from "@avg-studio/sdk";
+import type { SceneHotspot } from "./evg-data";
 import {
   CURRENT_LOCATION_VARIABLE,
   EVG_DATA_COLLECTION_ALIAS,
@@ -120,6 +120,7 @@ export class DispatchController {
     input: ScheduleStrategyInput,
     methodEvaluators: ExtensionMethodEvaluatorMap,
   ): Promise<ScheduleStrategyDecision> {
+    console.log(`[evg-dispatch]ctx check:${ctx.game.title()}`);
     console.log("[evg-dispatch] dispatch entered")
     // let colll = ctx.database.collection("evdata")
     // console.log(`[evg-dispatch] test data access ${colll}`)

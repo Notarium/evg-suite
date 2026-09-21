@@ -1238,7 +1238,7 @@ src/shared/evgData.ts
 该文件必须保持零依赖，可以整体复制到 evg-runtime，例如：
 
 ```text
-evg-runtime/sdk/types/evg-data.ts
+evg-runtime/src/evg/evg-data.ts
 ```
 
 同步由工作目录根部的本地脚本完成，脚本不进入 evg-editor 发布内容：
@@ -1248,11 +1248,8 @@ python sync_evg_data.py          # 把契约同步到 evg-runtime
 python sync_evg_data.py --check  # 检查两边是否一致
 ```
 
-同步时会同时检查 `evg-runtime/sdk/types/index.ts`，必要时补上：
-
-```ts
-export * from "./evg-data";
-```
+同步目标属于 runtime 源码；`evg-runtime/sdk/`（官方 `@avg-studio/sdk`
+只读副本）不接收任何同步内容。
 
 ### 21.1 数据表映射
 

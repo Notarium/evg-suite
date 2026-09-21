@@ -32,7 +32,11 @@ import {
 import { dispatchController, type DispatchSnapshot, type HotspotView } from "../evg/dispatch";
 import { buildMethodEvaluators, evaluateMoveLocation } from "../evg/methods";
 import { loadWeatherTable, type RuntimeWeatherEntry } from "../evg/runtime-config";
-import { LOCATION_MODULE_ID, WEATHER_VARIABLE } from "../evg/constants";
+import {
+  EVG_DATA_COLLECTION_ALIAS,
+  LOCATION_MODULE_ID,
+  WEATHER_VARIABLE,
+} from "../evg/constants";
 import {
   formatGameTime,
   loadTimeSettings,
@@ -267,6 +271,12 @@ function TimeInfoCard({ theme }: { theme: LocationOverlayTheme }) {
   const [weatherNames, setWeatherNames] = useState<Map<string, string> | null>(null);
   useEffect(() => {
     let live = true;
+    // 诊断（临时）：对照调度路径，验证 UI 上下文的 database 注入情况，问题清楚后移除
+    ctx.database
+      .collection(EVG_DATA_COLLECTION_ALIAS)
+      .find()
+      .then((docs) => console.info("[evg-debug][ui] collection().find() =", docs.length, "条"))
+      .catch((error) => console.error("[evg-debug][ui] database 访问失败:", error));
     loadTimeSettings(ctx.database)
       .then((next) => {
         if (live) setSettings(next);

@@ -216,6 +216,7 @@ schema 并转发 → 编辑器 `runtimeMethods.ts` 登记 → Common.md §9.3 �
 src/
   index.tsx               扩展入口：导出 LocationModule（默认）/ InventoryModule / IfExtModule / TimeModule
   evg/
+    evg-data.ts           EVG Data 公共契约副本（sync_evg_data.py 维护，只读）
     constants.ts          扩展 id、变量名、runtime-config 行常量
     runtime-config.ts     runtime-config 行（type=1000）的宽容读取
     evdata.ts             evg-data 行索引（事件/动作/条件/地点）+ 可达性计算
@@ -232,7 +233,7 @@ src/
   welcome-ui.tsx          旧工程样例（已从入口移除，留作界面写法参考）
 extension.json            manifest - id / 版本 / sdkVersion / evdata 依赖
 vite.config.ts            build 配置 - lib 模式 ESM 输出
-sdk/                      @avg-studio/sdk 源码副本（evg-data.ts 由同步脚本维护）
+sdk/                      @avg-studio/sdk 官方源码副本（只读，不承载 EVG 契约）
 ```
 
 ```bash
@@ -243,11 +244,13 @@ pnpm exec tsc --noEmit   # 类型检查（vite build 不做类型检查）
 ```
 
 注意：`sdk/` 是 `file:` 依赖，sdk 副本更新后需要重新 `pnpm install`
-才会反映到 node_modules。SDK 大版本更新会冲掉同步进副本的
-`sdk/types/evg-data.ts`（官方副本没有这个文件），重新跑一次工作区的
-`python sync_evg_data.py` 即可恢复（脚本会补回 `types/index.ts` 的导出行）；
-另外 `sdk/index.ts` 引用的 `extension-inspector.ts` 不在副本里，
-悬空导出需要重新注释（文件内有 NOTE 标记）。
+才会反映到 node_modules。EVG 契约副本不在 sdk 里——
+`src/evg/evg-data.ts` 属于本扩展源码，由工作区根部的
+`python sync_evg_data.py` 从 `evg-editor/src/shared/evgData.ts`
+整体复制维护，SDK 大版本更新 / 重新生成 sdk 副本不影响它。
+sdk 副本本身必须保持官方原样，工作区不向它写入任何内容。
+（当前副本的 `sdk/index.ts` 因缺 `extension-inspector.ts` 注释了该导出，
+带 NOTE 标记；换用完整官方副本时可恢复。）
 
 当前基于 **SDK 2.0.0**（`extension.json` 声明 `>=2.0.0`）。2.0 的
 主要变化对本扩展的影响：存档声明改为 `Extension.withSave(schema)`

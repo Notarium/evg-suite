@@ -20,8 +20,8 @@ import type {
   EvgValueOperand,
   EventType,
   ActionType,
-} from "@avg-studio/sdk";
-import { EVG_ACTION_PURPOSE } from "@avg-studio/sdk";
+} from "./evg-data";
+import { EVG_ACTION_PURPOSE } from "./evg-data";
 import type { EvgIndexes } from "./evdata";
 
 /** 扩展方法求值器：key = "<extensionId>/<methodId>"。 */

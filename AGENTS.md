@@ -27,12 +27,12 @@ evg-editor ── 校验结构、读取/编辑/写回 JSON ──> 工程目录
         │
         │  evg-editor/src/shared/evgData.ts
         ▼
-sync_evg_data.py ──复制──> evg-runtime/sdk/types/evg-data.ts
-                                      │
-playground/databases/                 │
+sync_evg_data.py ──复制──> evg-runtime/src/evg/evg-data.ts
+                                    │
+playground/databases/               │
   project-data--evdata.collection.json │  Runtime 读取 evg-data 行
-        └────── evg-data 行 ───────────┘
-                                      ▼
+        └────── evg-data 行 ─────────┘
+                                    ▼
                         按 Event / Action / Condition / LocationMap 契约执行
 ```
 
@@ -144,6 +144,7 @@ evg-runtime/
   src/
     index.tsx            扩展入口：导出 LocationModule（默认）/ InventoryModule
     evg/
+      evg-data.ts        EVG Data 公共契约副本（sync_evg_data.py 维护，只读）
       constants.ts       扩展 id、变量名、runtime-config 行常量
       runtime-config.ts  runtime-config 行（type=1000）的宽容读取
       evdata.ts          evg-data 行索引 + 地点可达性计算
@@ -160,7 +161,7 @@ evg-runtime/
       IfExtModule.ts     条件分支：每次调用重新求值的 If/else（cond-jump-custom）
     welcome-ui.tsx       旧工程样例（已从入口移除，留作参考）
   extension.json     扩展 manifest：id / 版本 / SDK 依赖 / evg-data 数据依赖
-  sdk/               @avg-studio/sdk 源码副本，包含同步来的 evg-data 类型
+  sdk/               @avg-studio/sdk 官方源码副本（只读，不承载 EVG 契约）
   dist/              构建产物
 ```
 
@@ -172,8 +173,9 @@ evg-runtime/
 - 扩展通过 `evg-data` 依赖读取项目数据；`playground` 中对应
   `databases/project-data--evdata.collection.json`。读取保持宽容
   （结构问题跳行 + 告警），写入侧校验由编辑器负责。
-- `sdk/types/evg-data.ts` 是从编辑器公共契约同步得到的副本，不要手改；
-  sdk 是 `file:` 依赖，副本更新后要重新 `pnpm install`。
+- `src/evg/evg-data.ts` 是从编辑器公共契约同步得到的副本（runtime 源码
+  的一部分），不要手改；`sdk/` 是官方 `@avg-studio/sdk` 的只读副本
+  （`file:` 依赖），副本更新后要重新 `pnpm install`，EVG 契约绝不写进 sdk。
 - 地点调度：LocationModule 声明项目调度策略「EVG 地点调度」——
   打开地点层挂起等待玩家，移动 / 剧情性 `move-location` 后返回章节决策；
   不挂本策略节点的项目走引擎默认顺序调度（详见 Common.md §9.3）。
@@ -248,7 +250,7 @@ pnpm exec tsc --noEmit
 
 8. **同步与扩展**
    - 契约实现文件：`evg-editor/src/shared/evgData.ts`。
-   - Runtime 目标文件：`evg-runtime/sdk/types/evg-data.ts`。
+   - Runtime 目标文件：`evg-runtime/src/evg/evg-data.ts`（runtime 源码的一部分，不进 sdk 副本）。
    - 通过 `python sync_evg_data.py` 同步，`--check` 检查是否一致。
    - 新增操作符、操作数来源、行类型时，需要同时更新契约、文档和 Runtime 实现。
 
@@ -521,7 +523,8 @@ pnpm watch
 ## 8. 协作规范
 
 - 公共契约以 `evg-editor/src/shared/evgData.ts` 为源，`Common.md` 为权威说明。
-- 不要手改 `evg-runtime/sdk/types/evg-data.ts`；它由同步脚本维护。
+- 不要手改 `evg-runtime/src/evg/evg-data.ts`；它由同步脚本维护。
+  `evg-runtime/sdk/`（官方 SDK 只读副本）不接受任何工作区写入。
 - 所有工程 JSON 写入必须经过统一写入入口，保持原子写入和项目级串行化。
 - 不提供新建工程功能，只打开已有工程；新增工程逻辑要先更新本文档和 `evg-editor/AGENTS.md`。
 - 所有 token、私钥、password 等敏感凭据不得写入代码或提交到仓库；使用环境变量和 `.gitignore`。
