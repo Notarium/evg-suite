@@ -201,6 +201,16 @@ function validateActionDataForPurpose(
       if (typeof data.variable !== 'string') {
         return `${where}.variable 必须是字符串`
       }
+      // op 缺省视为 assign（兼容旧数据）；toggle 忽略 value，但仍要求
+      // value 字段存在，保持形态统一。
+      if (
+        data.op !== undefined &&
+        data.op !== 'assign' &&
+        data.op !== 'toggle' &&
+        data.op !== 'add'
+      ) {
+        return `${where}.op 必须是 assign | toggle | add`
+      }
       // value 允许字面量 / 变量 / 扩展方法（把方法返回值写入变量），
       // 结构校验与条件操作数同口径。
       return validateEvgValueOperand(data.value, `${where}.value`)
@@ -419,6 +429,24 @@ export function validateLocationMap(
     const issue = validateSceneHotspot(hotspot, `${where}.hotspots[${index}]`)
     if (issue) return issue
   }
+
+  // onEnter 进入触发：可选数组，每项为事件引用（非空字符串）或内联事件。
+  if (value.onEnter !== undefined) {
+    if (!Array.isArray(value.onEnter)) {
+      return `${where}.onEnter 必须是数组`
+    }
+    for (const [index, binding] of value.onEnter.entries()) {
+      if (typeof binding === 'string') {
+        if (!isNonEmptyString(binding)) {
+          return `${where}.onEnter[${index}] 引用 id 不能为空`
+        }
+      } else {
+        const issue = validateEventValue(binding, `${where}.onEnter[${index}]`)
+        if (issue) return issue
+      }
+    }
+  }
+
   return null
 }
 

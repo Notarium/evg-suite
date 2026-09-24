@@ -91,6 +91,26 @@ actions:
   1. SetVariable(gold += 10)    → 不移动的热点执行完继续等待
 ```
 
+**进入触发 onEnter**（编辑器「地点」页的「进入触发」列表）：每次到达
+该地点，章节主 fragment 播完、地点层出现前按序尝试执行；每项独立
+`canExecute` 开关。「只触发一次」用变量做门槛：
+
+```
+触发 1「首次进入介绍」
+  canExecute: evg.story.living_room_visited == 0
+  actions:
+    1. CallFragment(片段: 初到客厅)
+    2. SetVariable(evg.story.living_room_visited = 1)
+触发 2「桌上钥匙」（还没拿走时）
+  canExecute: evg.item.key == 0
+  actions:
+    1. SetVariable(evg.item.key = 1)
+```
+
+注意：开局首轮直接进初始地点章节（开场铺垫优先），初始地点的 onEnter
+在第二轮到达时触发；onEnter 里的 move-location 只写位置变量，由下一轮
+调度切过去（不会打断本轮触发链）。
+
 ## 模块与运行循环
 
 ### LocationModule（子模块 id `location`）
@@ -158,6 +178,17 @@ actions:
 > 之后的流程）。参数：`variable`（变量）、`opr`（> / >= / < / <= / ==
 > / !=）、`compare`（按变量类型解析）、`trueFrag` / `falseFrag`（均可省，
 > 省略即该方向不跳）。
+
+**变量写入三连**（事件 / 触发链里的 SetVariable 动作，`op` 字段）：
+
+```
+op 省略 / = assign  → 赋值：variable = value（字面量 / 变量 / 扩展方法返回值）
+op = toggle         → 布尔翻转：true ↔ false（目标当前值不是布尔则告警跳过）
+op = add            → 数值自增：variable += value（目标与增量都必须是数字）
+```
+
+编辑器按目标变量的声明类型过滤操作项（bool 才有翻转、number 才有自增）。
+`add` **不做边界截断**——需要上限 / 下限的剧情语义用条件分支显式表达。
 
 ### 解释器（`src/evg/interpreter.ts`，开发者向）
 

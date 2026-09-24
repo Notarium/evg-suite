@@ -3,7 +3,8 @@ import {
   type CallFragmentActionData,
   type CallExtensionMethodActionData,
   type CallSystemSlotActionData,
-  type SetVariableActionData
+  type SetVariableActionData,
+  type SetVariableOperation
 } from '../../../../../shared/evgData'
 import type { ChapterSummary } from '../../../../../shared/chapter'
 import type { ProjectVariable } from '../../../../../shared/variable'
@@ -134,6 +135,28 @@ function SetVariableActionDataEditor({
       sourceVariable.type !== target.type
   )
 
+  // 操作项按目标变量的声明类型过滤：bool 才能翻转，number 才能自增；
+  // 目标未声明 / pending 时只保留赋值。op 缺省视为 assign。
+  const supportsToggle = target?.type === 'bool'
+  const supportsAdd = target?.type === 'number'
+  const op: SetVariableOperation =
+    data.op === 'toggle' || data.op === 'add' ? data.op : 'assign'
+
+  const changeVariable = (variable: string): void => {
+    // 换目标后当前操作可能不再适用（如从 bool 换到 number 的 toggle），
+    // 自动回落为赋值。
+    const nextTarget = getTargetVariable(variable, variables)
+    const nextSupportsToggle = nextTarget?.type === 'bool'
+    const nextSupportsAdd = nextTarget?.type === 'number'
+    const nextOp =
+      op === 'toggle' && !nextSupportsToggle
+        ? 'assign'
+        : op === 'add' && !nextSupportsAdd
+          ? 'assign'
+          : op
+    onChange({ ...data, variable, op: nextOp })
+  }
+
   return (
     <div className="action-data-fields">
       <label className="field">
@@ -142,30 +165,83 @@ function SetVariableActionDataEditor({
           value={data.variable}
           variables={variables}
           disabled={disabled}
-          onChange={(variable) => onChange({ ...data, variable })}
+          onChange={changeVariable}
         />
       </label>
 
       <div className="field">
         <div className="action-data-label">
-          <span>值</span>
-          {isVariableValue && (
+          {(supportsToggle || supportsAdd) && (
+            <div className="condition-operand__kind">
+              <button
+                type="button"
+                className={`segmented__item${op === 'assign' ? ' segmented__item--active' : ''}`}
+                disabled={disabled}
+                title="赋值（=）"
+                onClick={() => onChange({ ...data, op: 'assign' })}
+              >
+                赋值
+              </button>
+              {supportsToggle && (
+                <button
+                  type="button"
+                  className={`segmented__item${op === 'toggle' ? ' segmented__item--active' : ''}`}
+                  disabled={disabled}
+                  title="翻转目标布尔值"
+                  onClick={() => onChange({ ...data, op: 'toggle' })}
+                >
+                  翻转
+                </button>
+              )}
+              {supportsAdd && (
+                <button
+                  type="button"
+                  className={`segmented__item${op === 'add' ? ' segmented__item--active' : ''}`}
+                  disabled={disabled}
+                  title="数值自增（+=）"
+                  onClick={() => onChange({ ...data, op: 'add' })}
+                >
+                  自增
+                </button>
+              )}
+            </div>
+          )}
+          {op !== 'toggle' && isVariableValue && (
             <small className="action-data-label__hint">复制源变量当前值</small>
           )}
-          {value.kind === 'extensionMethod' && (
+          {op !== 'toggle' && value.kind === 'extensionMethod' && (
             <small className="action-data-label__hint">
-              写入扩展方法的返回值
+              {op === 'add' ? '增量取扩展方法的返回值' : '写入扩展方法的返回值'}
             </small>
           )}
         </div>
-        <ConditionOperandEditor
-          value={data.value}
-          variables={valueVariables}
-          expectedLiteralKinds={expectedLiteralKinds}
-          disabled={disabled}
-          onChange={(value) => onChange({ ...data, value })}
-        />
-        {value.kind === 'extensionMethod' &&
+
+        {op !== 'toggle' && (
+          <ConditionOperandEditor
+            value={data.value}
+            variables={valueVariables}
+            expectedLiteralKinds={expectedLiteralKinds}
+            disabled={disabled}
+            onChange={(value) => onChange({ ...data, value })}
+          />
+        )}
+
+        {!target && (
+          <p className="field-hint">
+            选择已声明类型的变量后，可使用翻转 / 自增。
+          </p>
+        )}
+        {op === 'toggle' && (
+          <p className="field-hint">写入时翻转目标布尔值（true ↔ false）。</p>
+        )}
+        {op === 'add' && (
+          <p className="field-hint">
+            在当前值上加增量；不做边界截断，需要上限 / 下限用条件分支表达。
+          </p>
+        )}
+
+        {op !== 'toggle' &&
+          value.kind === 'extensionMethod' &&
           (() => {
             // 已登记方法未声明 returns 时运行时拿不到返回值，会跳过写入
             const spec = findRuntimeMethodSpec(
@@ -179,12 +255,12 @@ function SetVariableActionDataEditor({
               </p>
             )
           })()}
-        {isVariableValue && target && target.type !== 'pending' && (
+        {op !== 'toggle' && isVariableValue && target && target.type !== 'pending' && (
           <p className="field-hint">
             只列出与目标变量同类型的变量，不做隐式类型转换。
           </p>
         )}
-        {hasTypeMismatch && (
+        {op !== 'toggle' && hasTypeMismatch && (
           <p className="field-hint field-hint--warning">
             当前源变量与目标变量类型不一致，请重新选择。
           </p>

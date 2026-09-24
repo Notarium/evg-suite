@@ -1995,6 +1995,36 @@ button:focus-visible {
   padding: 0 4px 8px;
 }
 
+/* Location enter triggers (locations page) */
+
+.location-enter-triggers {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--soft-surface);
+}
+
+.location-enter-triggers__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.location-enter-triggers__row > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.location-enter-triggers__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 /* Location graph editor (runtime config page) */
 
 .location-graph {

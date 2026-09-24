@@ -288,9 +288,16 @@ interface EvgActionDataMap {
 内置 data：
 
 ```ts
+// 写入方式：assign 直接赋值（缺省，兼容旧数据）；toggle 布尔翻转；
+// add 数值自增（不做边界截断，需要上限 / 下限用条件分支表达）
+type SetVariableOperation = 'assign' | 'toggle' | 'add'
+
 interface SetVariableActionData {
   variable: string
-  // 字面量 / 变量 / 扩展方法返回值；方法未声明 returns 时运行时跳过写入
+  // 写入方式；缺省视为 assign，toggle 忽略 value
+  op?: SetVariableOperation
+  // assign/add 的右值：字面量 / 变量 / 扩展方法返回值；
+  // 方法未声明 returns 时运行时跳过写入
   value: EvgLiteralOperand | EvgVariableOperand | EvgExtensionMethodOperand
 }
 
@@ -370,6 +377,7 @@ interface LocationMap {
   label?: string      // 地点显示名（导航 / 移动提示），缺省回退章节名
   disabled?: boolean  // 禁用的地点不可移动、不执行调度；缺省视为 false
   hotspots: SceneHotspot[]
+  onEnter?: EventBinding[]  // 进入触发事件链；缺省表示无进入触发
 }
 ```
 
@@ -430,6 +438,21 @@ interface SceneHotspot {
 - 内联：直接在热点里保存完整 `EventType`
 - 引用：保存字符串 id，引用 `evg-data` 中 `type=Event` 的行
 - 留空表示暂未绑定
+
+进入触发（`onEnter`）：
+
+- **触发时机**：每次到达该地点，章节主 fragment 播完、地点层（overlay）
+  放置前，按数组顺序依次尝试执行；随后的数据刷新与判定（热点可用性
+  等）基于触发后的状态。
+- **开关**：每个事件绑定独立判定 `canExecute`，未通过的跳过；单个触发
+  执行失败只告警跳过，不中断导航。
+- 事件绑定形态与热点事件相同（内联 / 引用）。
+- 开局首轮直接进入初始地点（开场铺垫 fragment 优先），不触发；第二轮
+  到达时正常触发。非地点章节（无 LocationMap 行）没有进入触发。
+- 触发事件中的 `move-location` 在调度等待建立前只写位置变量，
+  由下一轮调度兜底切章，不会递归触发。
+- 「只触发一次」不内建于契约：用一个项目变量做门槛（`canExecute` 查
+  标记 + `SetVariable` 置标记）即可表达，见 runtime README 的惯用法。
 
 ## 8. 命名对照
 

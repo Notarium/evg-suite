@@ -7,6 +7,9 @@ _tmp/
 # sample project (opened by editor/runtime for testing, not part of the source)
 playground/
 
+# ref material
+ref/
+
 # OS / editor
 .DS_Store
 Thumbs.db

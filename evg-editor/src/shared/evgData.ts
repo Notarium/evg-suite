@@ -292,10 +292,20 @@ export type SetVariableValueOperand =
   | EvgVariableOperand
   | EvgExtensionMethodOperand
 
+/**
+ * SetVariable 的写入方式。
+ * - assign：直接赋值（缺省，兼容旧数据）
+ * - toggle：布尔翻转（运行时要求目标当前值是布尔）
+ * - add：数值自增（运行时要求目标当前值与增量都是数字，不做边界截断）
+ */
+export type SetVariableOperation = 'assign' | 'toggle' | 'add'
+
 export interface SetVariableActionData {
   /** 变量名，对应 project.variables.json 的 variables[].name。 */
   variable: string
-  /** 要写入的值：字面量 / 另一变量 / 扩展方法返回值。 */
+  /** 写入方式；缺省视为 assign。toggle 忽略 value。 */
+  op?: SetVariableOperation
+  /** assign/add 的值：字面量 / 另一变量 / 扩展方法返回值。 */
   value: SetVariableValueOperand
 }
 
@@ -485,6 +495,12 @@ export interface LocationMap {
    */
   disabled?: boolean
   hotspots: SceneHotspot[]
+  /**
+   * 进入触发事件链：每次到达该地点（章节主 fragment 播完、地点层放置前）
+   * 按序尝试执行，每项独立 canExecute 判定。事件支持内联或引用
+   * type=Event 的行；缺省表示无进入触发。
+   */
+  onEnter?: EventBinding[]
 }
 
 /* ==========================================================================

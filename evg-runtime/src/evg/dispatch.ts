@@ -34,7 +34,7 @@ import {
 } from "./evdata";
 import {
   evalConditionBinding,
-  runHotspotEvent,
+  runEventBinding,
   type EvgEnv,
   type ExtensionMethodEvaluatorMap,
 } from "./interpreter";
@@ -182,6 +182,21 @@ export class DispatchController {
     const signal = ctx.flow.signal;
     if (signal.aborted) {
       return { kind: "end", reason: "调度被取消" };
+    }
+
+    // 进入触发：到达地点（章节主 fragment 已播完、地点层放置前）按序
+    // 尝试执行 onEnter 事件链，每项 canExecute 独立判定；单个触发失败
+    // 不中断导航。随后基于触发后的状态刷新快照（热点可用性等）。
+    const env = this.env;
+    if (env) {
+      const enterMap = env.indexes.locations.get(current);
+      for (const [index, binding] of (enterMap?.onEnter ?? []).entries()) {
+        try {
+          await runEventBinding(binding, env);
+        } catch (error) {
+          warn(`进入触发 #${index + 1} 执行失败，跳过: ${String(error)}`);
+        }
+      }
     }
 
     await this.buildSnapshot(current);
@@ -398,7 +413,7 @@ export class DispatchController {
       return;
     }
 
-    await runHotspotEvent(hotspot.event, this.env);
+    await runEventBinding(hotspot.event, this.env);
 
     // 事件可能改了变量 / 持有物 → 未移动时刷新热点可用状态。
     if (this.awaiting) {

@@ -206,16 +206,53 @@ export async function runAction(effect: ActionType, env: EvgEnv): Promise<void> 
 
   switch (effect.type) {
     case EVG_ACTION_PURPOSE.SetVariable: {
-      const data = effect.data as { variable?: unknown; value?: unknown };
+      const data = effect.data as {
+        variable?: unknown;
+        value?: unknown;
+        op?: unknown;
+      };
       if (typeof data?.variable !== "string") {
         warn(`SetVariable 缺少目标变量，跳过: ${effect.id}`);
         return;
       }
+      const op =
+        data.op === "toggle" || data.op === "add" ? data.op : "assign";
+
+      // toggle：布尔翻转；目标当前值不是布尔时告警跳过（不做隐式转换）。
+      if (op === "toggle") {
+        const current = env.ctx.variables.get(data.variable);
+        if (typeof current !== "boolean") {
+          warn(`SetVariable toggle 目标不是布尔（${data.variable}），跳过`);
+          return;
+        }
+        env.ctx.variables.set(data.variable, !current);
+        return;
+      }
+
       const value = await evalOperand(data.value as EvgValueOperand, env);
       if (value === undefined || (value !== null && typeof value === "object")) {
         warn(`SetVariable 求值结果不是基础类型（${data.variable}），跳过写入`);
         return;
       }
+
+      // add：数值自增；目标当前值与增量都必须是有限数字，不做边界截断
+      //（需要边界的剧情语义用条件分支显式表达）。
+      if (op === "add") {
+        const current = env.ctx.variables.get(data.variable);
+        if (
+          typeof current !== "number" ||
+          typeof value !== "number" ||
+          !Number.isFinite(value)
+        ) {
+          warn(
+            `SetVariable add 需要目标当前值与增量都是数字（${data.variable}），跳过`
+          );
+          return;
+        }
+        env.ctx.variables.set(data.variable, current + value);
+        return;
+      }
+
       env.ctx.variables.set(data.variable, value);
       return;
     }
@@ -285,8 +322,8 @@ export async function runEvent(event: EventType, env: EvgEnv): Promise<void> {
   }
 }
 
-/** 解析热点的事件绑定并执行；无事件绑定时不做任何事。 */
-export async function runHotspotEvent(
+/** 解析事件绑定（内联或引用 type=Event 行）并执行；未绑定或断链时跳过。 */
+export async function runEventBinding(
   eventBinding: EventType | string | undefined,
   env: EvgEnv,
 ): Promise<void> {
@@ -298,7 +335,7 @@ export async function runHotspotEvent(
       : eventBinding;
 
   if (!event) {
-    warn(`热点事件引用断链，跳过: ${String(eventBinding)}`);
+    warn(`事件引用断链，跳过: ${String(eventBinding)}`);
     return;
   }
 

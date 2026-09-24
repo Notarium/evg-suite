@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom'
 import type { EvgDataRecord } from '../../../shared/database'
 import {
   EVG_DATA_KIND,
+  type EventBinding,
   type SceneHotspot,
   type LocationMap,
   type SceneHotspotShape
@@ -38,6 +39,7 @@ import type { ConditionOption } from '../components/evg/condition/ConditionEdito
 import type { ActionOption } from '../components/evg/action/actionOptions'
 import type { EventOption } from '../components/evg/event/eventOptions'
 import { HotspotPropertyEditor } from '../components/evg/scene/HotspotPropertyEditor'
+import { LocationEnterTriggersEditor } from '../components/evg/scene/LocationEnterTriggersEditor'
 import { collectHotspotFragmentIssues } from '../lib/evgReferences'
 import { useAssetUrl } from '../hooks/useAssetUrl'
 import { useAppStore } from '../stores/useAppStore'
@@ -718,6 +720,18 @@ export function LocationsPage() {
     })
   }
 
+  /** 更新进入触发事件链（undefined = 无触发，写盘时省略字段）。 */
+  const updateEnterTriggers = (onEnter: EventBinding[] | undefined): void => {
+    if (!selectedChapter || !mapRecord) return
+
+    commitMap({
+      ...mapRecord.data,
+      chapterId: selectedChapter.id,
+      sceneId: selectedChapter.sceneId,
+      onEnter
+    })
+  }
+
   const updateHotspot = (
     hotspotId: string,
     patch: Partial<SceneHotspot>
@@ -1126,6 +1140,16 @@ export function LocationsPage() {
             disabled={saving}
             onChange={updateLocationMeta}
           />
+          <LocationEnterTriggersEditor
+            value={mapRecord.data.onEnter}
+            variables={variables as ProjectVariable[]}
+            chapters={chapters}
+            conditions={conditionOptions}
+            actions={actionOptions}
+            events={eventOptions}
+            disabled={saving}
+            onChange={updateEnterTriggers}
+          />
         </div>
 
         <ScheduleNoticeBar
@@ -1404,6 +1428,16 @@ export function LocationsPage() {
                 chapterName={selectedChapter.name}
                 disabled={saving}
                 onChange={updateLocationMeta}
+              />
+              <LocationEnterTriggersEditor
+                value={mapRecord.data.onEnter}
+                variables={variables as ProjectVariable[]}
+                chapters={chapters}
+                conditions={conditionOptions}
+                actions={actionOptions}
+                events={eventOptions}
+                disabled={saving}
+                onChange={updateEnterTriggers}
               />
               <p className="field-hint">
                 {tool === 'select'
